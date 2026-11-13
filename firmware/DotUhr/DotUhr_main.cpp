@@ -13,6 +13,8 @@
 #include <MD_MAX72xx.h>
 #include <ArduinoJson.h>
 #include <time.h>
+#include <sys/time.h>
+#include "esp_sntp.h"
 #include "webui.h"
 #include "clockfonts.h"
 
@@ -27,7 +29,7 @@
 #define PIN_TOUCH   3   // TTP223 Touch-Sensor:  I/O -> GPIO3,  VCC -> 3V3,  GND -> GND
 #define PIN_BUZZER 10   // Buzzer:  + (bzw. I/O) -> GPIO10,  - -> GND
 
-#define FW_VERSION   "1.2.1"
+#define FW_VERSION   "1.3.0"
 #define AP_NAME      "DotUhr-Setup"    // Einrichtungs-WLAN (offen, ohne Passwort)
 
 // ---------------------------------------------------------------------------
@@ -122,6 +124,7 @@ uint32_t ringStart = 0, snoozeUntil = 0;
 int      lastAlarmMin = -1;
 uint32_t wakeUntil = 0;       // Anzeige trotz Nacht-Aus kurz eingeschaltet (Touch)
 bool     manualOff = false;   // per Touch (lang drücken) ausgeschaltet
+volatile uint8_t timeSource = 0;   // 0=nicht gestellt 1=Internet (NTP) 2=manuell
 
 // ---------------------------------------------------------------------------
 //  Hilfsfunktionen: Text / Zeichensatz
@@ -711,8 +714,11 @@ void stopAP() {
   Serial.println("[WLAN] Access-Point beendet");
 }
 
+void onNtpSync(struct timeval*) { timeSource = 1; }
+
 void onConnected() {
   Serial.println("[WLAN] verbunden, IP " + WiFi.localIP().toString());
+  sntp_set_time_sync_notification_cb(onNtpSync);
   configTzTime(cfg.tz.c_str(), "pool.ntp.org", "time.cloudflare.com", "ptbtime1.ptb.de");
   if (!mdnsUp && MDNS.begin(cfg.host.c_str())) { MDNS.addService("http", "tcp", 80); mdnsUp = true; }
   weatherRequested = true;
@@ -767,7 +773,7 @@ void apiStatus() {
   JsonDocument d;
   struct tm t; char b[32] = "--";
   if (getLocalTime(&t, 0) && t.tm_year > 120) strftime(b, sizeof(b), "%d.%m.%Y %H:%M:%S", &t);
-  d["time"] = b; d["timeValid"] = timeValid;
+  d["time"] = b; d["timeValid"] = timeValid; d["timeSource"] = timeSource;
   d["version"] = FW_VERSION;
   d["ip"] = WiFi.localIP().toString();
   d["ssid"] = WiFi.SSID(); d["rssi"] = WiFi.RSSI();
@@ -842,6 +848,32 @@ void apiAlarm() {   // /api/alarm?action=test|stop|snooze
   server.send(200, "application/json", "{\"ok\":true}");
 }
 
+// Uhrzeit von Hand stellen (z.B. ohne Internet):
+//   /api/time?epoch=1763036400          (Sekunden seit 1970, UTC – z.B. vom Browser)
+//   /api/time?local=2026-11-13T13:20:00  (Ortszeit gemäß eingestellter Zeitzone)
+void apiTime() {
+  time_t e = 0;
+  if (server.hasArg("epoch")) e = (time_t)strtoll(server.arg("epoch").c_str(), nullptr, 10);
+  else if (server.hasArg("local")) {
+    int Y, M, D, h, m, sec = 0;
+    if (sscanf(server.arg("local").c_str(), "%d-%d-%dT%d:%d:%d", &Y, &M, &D, &h, &m, &sec) >= 5) {
+      struct tm t = {};
+      t.tm_year = Y - 1900; t.tm_mon = M - 1; t.tm_mday = D;
+      t.tm_hour = h; t.tm_min = m; t.tm_sec = sec; t.tm_isdst = -1;
+      setenv("TZ", cfg.tz.c_str(), 1); tzset();
+      e = mktime(&t);
+    }
+  }
+  if (e < 1600000000) { server.send(400, "text/plain", "Ungültige Zeitangabe"); return; }
+  struct timeval tv = { e, 0 };
+  settimeofday(&tv, nullptr);
+  timeSource = 2; timeValid = true;
+  P->displayReset(); parolaRunning = false; active = -1;
+  applyBrightness(true);
+  Serial.printf("[Zeit] manuell gestellt: %ld\n", (long)e);
+  server.send(200, "application/json", "{\"ok\":true}");
+}
+
 void apiMessage() {
   String t = server.arg("text");
   if (t.isEmpty()) { server.send(400, "text/plain", "Parameter 'text' fehlt"); return; }
@@ -873,6 +905,7 @@ void setupWeb() {
   server.on("/api/message", HTTP_ANY, apiMessage);
   server.on("/api/brightness", HTTP_ANY, apiBrightness);
   server.on("/api/alarm", HTTP_ANY, apiAlarm);
+  server.on("/api/time", HTTP_ANY, apiTime);
   server.on("/api/scan", HTTP_GET, apiScan);
   server.on("/api/weather/refresh", HTTP_POST, []() { weatherRequested = true; server.send(200, "application/json", "{\"ok\":true}"); });
   server.on("/api/restart", HTTP_POST, []() {

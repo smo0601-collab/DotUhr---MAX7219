@@ -93,6 +93,10 @@ Die Daten kommen von Open-Meteo. Das ist kostenlos und braucht keinen API-Schlü
 
 ## 4. Web-Oberfläche
 
+<img src="bilder/weboberflaeche.png" width="300" align="right">
+
+Die Oberfläche ist in Reiter aufgeteilt: **Start** (Status, Sofort-Nachricht) · **Anzeige** (Ablauf, Uhr & Datum, Helligkeit) · **Wecker** · **Wetter** · **System** (Uhrzeit stellen, Zeitzone, Touch, WLAN, Update).
+
 * **Live-Vorschau** der Matrix oben auf der Seite
 * **Status:** Zeit, Datum, Wetter, IP, WLAN-Signal, Laufzeit
 * **Sofort-Nachricht** mit einstellbarer Anzahl an Wiederholungen
@@ -107,6 +111,7 @@ Die Daten kommen von Open-Meteo. Das ist kostenlos und braucht keinen API-Schlü
   | 1,5 s halten | Anzeige an/aus | Wecker aus |
 * **Datum:** `12.11.`, `Do 12.11.` oder `Donnerstag, 12. November 2026`
 * **Helligkeit + Nachtmodus:** Die Regler wirken sofort und werden automatisch gespeichert. Nachts kann die Uhr dimmen oder ganz ausgehen.
+* **Uhrzeit & Datum ohne Internet:** Unter *System* kannst du die Zeit mit einem Knopf vom Handy/PC übernehmen oder Datum und Uhrzeit von Hand eintragen. Ist die Uhr noch nicht gestellt, übernimmt sie die Zeit automatisch, sobald du die Seite öffnest (praktisch im Einrichtungs-WLAN ohne Internet). Ist Internet da, stellt sie sich selbst über NTP. Ohne Uhrenbaustein (RTC) geht die Zeit bei Stromausfall verloren.
 * **System:** Zeitzone, Matrix-Typ, Anzahl der Module, Gerätename, OTA-Update, Neustart, Werkseinstellungen
 
 Umlaute, ß und ° werden korrekt dargestellt.
@@ -116,6 +121,8 @@ Umlaute, ß und ° werden korrekt dargestellt.
 GET  /api/message?text=Waschmaschine%20fertig&repeat=3
 GET  /api/brightness?v=0..15&save=1
 GET  /api/alarm?action=test|snooze|stop
+GET  /api/time?epoch=1763036400            (Sekunden seit 1970, UTC)
+GET  /api/time?local=2026-11-13T13:20:00   (Ortszeit)
 GET  /api/status        JSON mit Zeit, Wetter, WLAN …
 GET  /api/config        Einstellungen ohne Passwort
 POST /api/config        JSON mit den Feldern, die geändert werden sollen
@@ -170,7 +177,7 @@ Export: `openscad -D 'part="body"' -o body.stl dotuhr_gehaeuse.scad` (Teile: `bo
 | Nur ein Block zeigt etwas an | *Anzahl 8×8-Module* auf 4 stellen |
 | Wirre Pixel / flackert | Elko nachrüsten, Kabel kürzen, Diode in VCC (siehe 3,3-V-Logik) |
 | WLAN verbindet nicht / bricht ab | *Sendeleistung reduzieren* aktiv lassen (bekanntes Antennenproblem beim Super Mini), 2,4-GHz-Netz verwenden |
-| Uhr zeigt `--:--` | Keine Internetverbindung (NTP); Zeitzone prüfen |
+| Uhr zeigt `--:--` | Kein Internet: Web-Oberfläche öffnen (stellt die Zeit automatisch) oder unter *System → Uhrzeit & Datum stellen* |
 | Kein serieller Monitor | In der IDE *USB CDC On Boot: Enabled* einstellen |
 | Touch reagiert nicht | Statusanzeige „● berührt“ in der Web-Oberfläche prüfen; Sensor fest an die Wand drücken; ggf. *Signal invertieren* |
 | Buzzer leise/stumm | Buzzer-Typ (passiv/aktiv) in der Web-Oberfläche richtig wählen |

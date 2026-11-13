@@ -28,10 +28,16 @@ button.warn{background:#5a1d12;color:#ffd9cf}
 .save{position:sticky;bottom:10px;text-align:center}.save button{padding:12px 34px;font-size:16px;box-shadow:0 4px 16px #000a}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--amber);color:#1b1006;padding:9px 16px;border-radius:8px;display:none;font-weight:700}
 small{color:var(--dim)}
+nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.tabs button:first-child{margin-left:auto}nav.tabs button:last-child{margin-right:auto}
+nav.tabs button{background:#2d2217;color:var(--txt);border:1px solid var(--line);font-weight:400;white-space:nowrap;padding:8px 14px}
+nav.tabs button.on{background:linear-gradient(var(--amber),var(--amber2));color:#1b1006;border-color:transparent;font-weight:700}
+.tab{display:none}.tab.on{display:block}
 </style></head><body>
 <header><h1>DOT·UHR</h1><div class="bezel"><canvas id="cv" width="320" height="80"></canvas></div></header>
+<nav class="tabs"><button data-t="start" onclick="tab('start')">⌂ Start</button><button data-t="anzeige" onclick="tab('anzeige')">▦ Anzeige</button><button data-t="wecker" onclick="tab('wecker')">⏰ Wecker</button><button data-t="wetter" onclick="tab('wetter')">☁ Wetter</button><button data-t="system" onclick="tab('system')">⚙ System</button></nav>
 <main>
-
+<section class="tab" id="t-start">
 <div class="card"><h2>Status</h2><div class="grid" id="st"></div></div>
 
 <div class="card"><h2>Sofort-Nachricht</h2>
@@ -39,6 +45,8 @@ small{color:var(--dim)}
 <input type="number" id="rep" value="1" min="1" max="20" title="Wiederholungen"><button onclick="sendMsg()">Senden</button></div>
 <small>Auch per HTTP: <code>http://dotuhr.local/api/message?text=Hallo&amp;repeat=2</code></small></div>
 
+</section>
+<section class="tab" id="t-anzeige">
 <div class="card"><h2>Ablauf</h2>
 <div class="row"><input type="checkbox" id="showClock"><label>Uhr anzeigen</label>für <input type="number" id="clockSec" min="3" max="3600"> s</div>
 <div class="row"><input type="checkbox" id="showDate"><label>Datum anzeigen</label>für <input type="number" id="dateSec" min="1" max="60"> s</div>
@@ -56,6 +64,15 @@ small{color:var(--dim)}
 <div class="row"><label>Datumsformat</label><select id="dateStyle" class="wide"><option value="0">12.11.</option><option value="1">Do 12.11.</option><option value="2">Donnerstag, 12. November 2026 (Laufschrift)</option></select></div>
 </div>
 
+<div class="card"><h2>Helligkeit</h2>
+<div class="row"><label>Tag</label><input type="range" id="bright" min="0" max="15" oninput="bv.textContent=this.value;bri(this.value,0)" onchange="bri(this.value,0,1)"><span id="bv"></span></div>
+<div class="row"><input type="checkbox" id="nightEn"><label>Nachtmodus</label>von <input type="number" id="nightFrom" min="0" max="23"> bis <input type="number" id="nightTo" min="0" max="23"> Uhr</div>
+<div class="row"><label>Nacht</label><input type="range" id="nightBright" min="0" max="15" oninput="nv.textContent=this.value;bri(this.value,1)" onchange="bri(this.value,1,1)"><span id="nv"></span></div>
+<div class="row"><input type="checkbox" id="nightOff"><label>Nachts ganz aus</label></div>
+<small>Die Regler wirken sofort und werden automatisch gespeichert.</small></div>
+
+</section>
+<section class="tab" id="t-wecker">
 <div class="card"><h2>Wecker</h2>
 <div id="alarms"></div>
 <div class="row"><label>Ton</label><select id="sound" class="wide"><option value="0">Piepen</option><option value="1">Melodie</option><option value="2">Klingel</option></select></div>
@@ -64,13 +81,8 @@ small{color:var(--dim)}
 <div class="row"><button class="sec" onclick="save().then(()=>fetch('/api/alarm?action=test'))">Wecker testen</button><button class="sec" onclick="fetch('/api/alarm?action=stop')">Stopp</button></div>
 <small>Ohne Wochentag = einmaliger Wecker. Klingeln: <b>Tippen</b> = Schlummern, <b>Halten</b> = Wecker aus. Ein aktiver Wecker zeigt einen Punkt oben rechts.</small></div>
 
-<div class="card"><h2>Touch-Taste (TTP223)</h2>
-<div class="row"><input type="checkbox" id="touchEn"><label>Touch aktiv</label><span id="tst"></span></div>
-<div class="row"><input type="checkbox" id="touchBeep"><label>Klick-Ton</label></div>
-<div class="row"><input type="checkbox" id="touchToggle"><label>Selbsthalte-Modus</label><small>nur wenn das Modul auf „selbsthemmend“ gelötet ist – dann: 2× schnell tippen = halten</small></div>
-<div class="row"><input type="checkbox" id="touchInv"><label>Signal invertieren</label><small>nur nötig, wenn der Sensor ohne Berührung „gedrückt“ meldet</small></div>
-<small><b>Tippen</b>: nächste Anzeige (nachts: Anzeige 15 s an) · <b>1,5 s halten</b>: Anzeige an/aus</small></div>
-
+</section>
+<section class="tab" id="t-wetter">
 <div class="card"><h2>Wetter</h2>
 <div class="row"><input type="text" id="q" placeholder="Ort suchen, z.B. Hamburg"><button class="sec" onclick="geo()">Suchen</button></div>
 <div class="list" id="geoList"></div>
@@ -79,12 +91,29 @@ small{color:var(--dim)}
 <button class="sec" onclick="post('/api/weather/refresh').then(()=>toast('Wetter wird aktualisiert'))">Jetzt abrufen</button></div>
 <small>Wetterdaten: Open-Meteo.com (kostenlos, ohne Anmeldung), Aktualisierung alle 15 min.</small></div>
 
-<div class="card"><h2>Helligkeit</h2>
-<div class="row"><label>Tag</label><input type="range" id="bright" min="0" max="15" oninput="bv.textContent=this.value;bri(this.value,0)" onchange="bri(this.value,0,1)"><span id="bv"></span></div>
-<div class="row"><input type="checkbox" id="nightEn"><label>Nachtmodus</label>von <input type="number" id="nightFrom" min="0" max="23"> bis <input type="number" id="nightTo" min="0" max="23"> Uhr</div>
-<div class="row"><label>Nacht</label><input type="range" id="nightBright" min="0" max="15" oninput="nv.textContent=this.value;bri(this.value,1)" onchange="bri(this.value,1,1)"><span id="nv"></span></div>
-<div class="row"><input type="checkbox" id="nightOff"><label>Nachts ganz aus</label></div>
-<small>Die Regler wirken sofort und werden automatisch gespeichert.</small></div>
+</section>
+<section class="tab" id="t-system">
+<div class="card"><h2>Uhrzeit &amp; Datum stellen</h2>
+<div class="row"><label>Aktuell auf der Uhr</label><b id="devTime">–</b><small id="devSrc"></small></div>
+<div class="row"><button onclick="syncBrowser()">Zeit von diesem Gerät übernehmen</button></div>
+<div class="row"><label>Von Hand</label><input type="date" id="setDate"><input type="time" id="setTime" step="1"><button class="sec" onclick="setManual()">Stellen</button></div>
+<small>Ohne Internet übernimmt die Uhr die Zeit automatisch vom Handy/PC, sobald diese Seite geöffnet wird. Ist Internet da, stellt sie sich selbst (NTP) und überschreibt die Handeinstellung. Ohne Uhrenbaustein (RTC) geht die Zeit bei Stromausfall verloren.</small>
+<div class="row"><label>Zeitzone</label><select id="tzSel" class="wide" onchange="if(this.value)tz.value=this.value">
+<option value="CET-1CEST,M3.5.0,M10.5.0/3">Mitteleuropa (Berlin, Wien, Zürich)</option>
+<option value="GMT0BST,M3.5.0/1,M10.5.0">London / Lissabon (WET)</option>
+<option value="EET-2EEST,M3.5.0/3,M10.5.0/4">Osteuropa (Helsinki, Athen)</option>
+<option value="TRT-3">Türkei</option><option value="MSK-3">Moskau</option>
+<option value="EST5EDT,M3.2.0,M11.1.0">New York</option><option value="PST8PDT,M3.2.0,M11.1.0">Los Angeles</option>
+<option value="UTC0">UTC</option><option value="">Eigene (POSIX)…</option></select></div>
+<div class="row"><label>POSIX-TZ</label><input type="text" id="tz"></div>
+</div>
+
+<div class="card"><h2>Touch-Taste (TTP223)</h2>
+<div class="row"><input type="checkbox" id="touchEn"><label>Touch aktiv</label><span id="tst"></span></div>
+<div class="row"><input type="checkbox" id="touchBeep"><label>Klick-Ton</label></div>
+<div class="row"><input type="checkbox" id="touchToggle"><label>Selbsthalte-Modus</label><small>nur wenn das Modul auf „selbsthemmend“ gelötet ist – dann: 2× schnell tippen = halten</small></div>
+<div class="row"><input type="checkbox" id="touchInv"><label>Signal invertieren</label><small>nur nötig, wenn der Sensor ohne Berührung „gedrückt“ meldet</small></div>
+<small><b>Tippen</b>: nächste Anzeige (nachts: Anzeige 15 s an) · <b>1,5 s halten</b>: Anzeige an/aus</small></div>
 
 <div class="card"><h2>WLAN</h2>
 <div class="row"><label>Netzwerk (SSID)</label><input type="text" id="ssid"><button class="sec" onclick="scan()">Suchen</button></div>
@@ -94,14 +123,6 @@ small{color:var(--dim)}
 <div class="row"><input type="checkbox" id="lowTx"><label>Sendeleistung reduzieren</label><small>hilft bei vielen ESP32-C3 Super Mini mit Verbindungsproblemen</small></div></div>
 
 <div class="card"><h2>System</h2>
-<div class="row"><label>Zeitzone</label><select id="tzSel" class="wide" onchange="if(this.value)tz.value=this.value">
-<option value="CET-1CEST,M3.5.0,M10.5.0/3">Mitteleuropa (Berlin, Wien, Zürich)</option>
-<option value="GMT0BST,M3.5.0/1,M10.5.0">London / Lissabon (WET)</option>
-<option value="EET-2EEST,M3.5.0/3,M10.5.0/4">Osteuropa (Helsinki, Athen)</option>
-<option value="TRT-3">Türkei</option><option value="MSK-3">Moskau</option>
-<option value="EST5EDT,M3.2.0,M11.1.0">New York</option><option value="PST8PDT,M3.2.0,M11.1.0">Los Angeles</option>
-<option value="UTC0">UTC</option><option value="">Eigene (POSIX)…</option></select></div>
-<div class="row"><label>POSIX-TZ</label><input type="text" id="tz"></div>
 <div class="row"><label>Matrix-Typ</label><select id="hw" class="wide"><option value="0">FC16 (meist bei 4-in-1-Modulen)</option><option value="1">GENERIC</option><option value="2">PAROLA</option><option value="3">ICSTATION</option></select></div>
 <div class="row"><label>Anzahl 8x8-Module</label><input type="number" id="modules" min="1" max="16"><small>Text spiegelverkehrt/verdreht? → anderen Matrix-Typ wählen</small></div>
 <div class="row"><label>Firmware-Update</label><input type="file" id="fw" accept=".bin"><button class="sec" onclick="ota()">Hochladen</button><span id="otaP"></span></div>
@@ -109,7 +130,8 @@ small{color:var(--dim)}
 <button class="warn" onclick="confirm('Alle Einstellungen löschen?')&&post('/api/reset')">Werkseinstellungen</button></div>
 </div>
 
-<div class="save"><button onclick="save()">Speichern</button></div>
+</section>
+<div class="save" id="saveBar"><button onclick="save()">Speichern</button></div>
 </main><div id="toast"></div>
 <script>
 const $=id=>document.getElementById(id);
@@ -167,11 +189,22 @@ async function status(){
  try{const s=await (await fetch('/api/status')).json();const w=s.weather;
   const kv=(k,v)=>`<div class="kv"><b>${v}</b><span>${k}</span></div>`;
   $('tst').textContent=s.touch?'● berührt':'';
+  $('devTime').textContent=s.timeValid?s.time:'nicht gestellt';
+  $('devSrc').textContent=['','(Internet)','(von Hand)'][s.timeSource]||'';
+  if(!s.timeValid&&!window._ts){window._ts=1;syncBrowser(1)}
   $('st').innerHTML=kv('Zeit',s.time.split(' ')[1]||'--')+kv('Datum',s.time.split(' ')[0])+
    (w?kv(w.text,w.temp.toFixed(1)+' °C'):kv('Wetter','–'))+
    kv(s.ap&&!s.connected?'Access-Point':'WLAN '+(s.ssid||''),s.connected?s.ip:'192.168.4.1')+
    kv('Signal',s.connected?s.rssi+' dBm':'–')+kv('Anzeige',s.off?'aus (Nacht)':s.scene+(s.night?' 🌙':''))+
    (s.ringing?kv('Wecker','KLINGELT'):s.snoozing?kv('Wecker','Schlummern'):'')+kv('Laufzeit',Math.floor(s.uptime/3600)+' h '+Math.floor(s.uptime%3600/60)+' min')+kv('Firmware','v'+s.version);
  }catch(e){}setTimeout(status,2000)}
+function tab(k){if(!$('t-'+k))k='start';document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.id=='t-'+k));
+ document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==k));
+ $('saveBar').style.display=k=='start'?'none':'';history.replaceState(null,'','#'+k)}
+async function syncBrowser(silent){await fetch('/api/time?epoch='+Math.floor(Date.now()/1000));if(!silent)toast('Uhrzeit übernommen');else toast('Uhrzeit automatisch vom Gerät übernommen')}
+async function setManual(){const d=$('setDate').value,t=$('setTime').value;if(!d||!t){toast('Datum und Uhrzeit eingeben');return}
+ const r=await fetch('/api/time?local='+d+'T'+(t.length==5?t+':00':t));toast(r.ok?'Uhr gestellt':'Ungültige Eingabe')}
+(()=>{const n=new Date(),z=x=>String(x).padStart(2,'0');$('setDate').value=n.getFullYear()+'-'+z(n.getMonth()+1)+'-'+z(n.getDate());$('setTime').value=z(n.getHours())+':'+z(n.getMinutes())+':00'})();
+tab((location.hash||'#start').slice(1));
 load();frame();status();
 </script></body></html>)rawliteral";
