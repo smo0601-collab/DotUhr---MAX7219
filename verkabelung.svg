@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" font-family="Liberation Sans, Arial, sans-serif">
+  <rect width="900" height="600" fill="#fbf7ef"/>
+  <text x="450" y="38" text-anchor="middle" font-size="24" font-weight="bold" fill="#3a2a18">DotUhr – Verkabelung</text>
+
+  <!-- ESP32-C3 Super Mini -->
+  <rect x="300" y="110" width="190" height="330" rx="10" fill="#1f4fa3"/>
+  <rect x="365" y="88" width="60" height="30" rx="6" fill="#c9c9c9" stroke="#777"/>
+  <text x="395" y="80" text-anchor="middle" font-size="13" fill="#3a2a18">USB-C (hinten mittig)</text>
+  <text x="395" y="150" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff">ESP32-C3</text>
+  <text x="395" y="170" text-anchor="middle" font-size="14" fill="#dfe8ff">Super Mini</text>
+  <g font-size="15" fill="#fff" font-weight="bold">
+    <text x="476" y="215" text-anchor="end">5V</text><text x="476" y="245" text-anchor="end">GND</text>
+    <text x="476" y="275" text-anchor="end">GPIO6</text><text x="476" y="305" text-anchor="end">GPIO7</text>
+    <text x="476" y="335" text-anchor="end">GPIO4</text>
+    <text x="314" y="215">3V3</text><text x="314" y="245">GND</text><text x="314" y="275">GPIO3</text>
+    <text x="314" y="375">GPIO10</text><text x="314" y="405">GND</text>
+  </g>
+  <g fill="#e8c34a">
+    <circle cx="490" cy="210" r="6"/><circle cx="490" cy="240" r="6"/><circle cx="490" cy="270" r="6"/><circle cx="490" cy="300" r="6"/><circle cx="490" cy="330" r="6"/>
+    <circle cx="300" cy="210" r="6"/><circle cx="300" cy="240" r="6"/><circle cx="300" cy="270" r="6"/><circle cx="300" cy="370" r="6"/><circle cx="300" cy="400" r="6"/>
+  </g>
+
+  <!-- Matrix-Leitungen -->
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M496 210 H620" stroke="#d62d20"/><path d="M496 240 H620" stroke="#222"/>
+    <path d="M496 270 H620" stroke="#2e7d32"/><path d="M496 300 H620" stroke="#f9a825"/>
+    <path d="M496 330 H620" stroke="#1565c0"/>
+  </g>
+  <rect x="620" y="160" width="250" height="210" rx="6" fill="#1b5e20"/>
+  <g fill="#161616"><rect x="680" y="172" width="44" height="186"/><rect x="726" y="172" width="44" height="186"/><rect x="772" y="172" width="44" height="186"/><rect x="818" y="172" width="44" height="186"/></g>
+  <rect x="620" y="195" width="52" height="150" fill="#2e7d32"/>
+  <g font-size="15" font-weight="bold" fill="#fff"><text x="628" y="215">VCC</text><text x="628" y="245">GND</text><text x="628" y="275">DIN</text><text x="628" y="305">CS</text><text x="628" y="335">CLK</text></g>
+  <text x="745" y="150" text-anchor="middle" font-size="14" fill="#3a2a18">MAX7219 4-in-1 – Eingang links</text>
+
+  <!-- TTP223 -->
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M294 210 H180" stroke="#d62d20"/><path d="M294 240 H180" stroke="#222"/><path d="M294 270 H180" stroke="#8e24aa"/>
+  </g>
+  <rect x="40" y="185" width="140" height="110" rx="8" fill="#1565c0"/>
+  <circle cx="95" cy="240" r="30" fill="none" stroke="#9ec5ff" stroke-width="3"/>
+  <g font-size="14" font-weight="bold" fill="#fff"><text x="135" y="215">VCC</text><text x="135" y="245">GND</text><text x="135" y="275">I/O</text></g>
+  <text x="110" y="175" text-anchor="middle" font-size="15" font-weight="bold" fill="#3a2a18">TTP223 Touch</text>
+
+  <!-- Buzzer -->
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M294 370 H180" stroke="#ef6c00"/><path d="M294 400 H180" stroke="#222"/>
+  </g>
+  <circle cx="120" cy="385" r="50" fill="#1a1a1a"/><circle cx="120" cy="385" r="8" fill="#555"/>
+  <g font-size="14" font-weight="bold" fill="#fff"><text x="150" y="375">+</text><text x="150" y="405">−</text></g>
+  <text x="120" y="455" text-anchor="middle" font-size="15" font-weight="bold" fill="#3a2a18">Buzzer 12 mm</text>
+
+  <g font-size="13" fill="#3a2a18">
+    <text x="40" y="500">Matrix: 5V→VCC · GND→GND · GPIO6→DIN · GPIO7→CS · GPIO4→CLK   (Elko 470–1000 µF an VCC/GND empfohlen)</text>
+    <text x="40" y="522">Touch TTP223: 3V3→VCC · GND→GND · GPIO3→I/O</text>
+    <text x="40" y="544">Buzzer: GPIO10→+ · GND→−   (Piezo/passiv direkt; Magnet-Buzzer oder 5-V-Buzzer über Transistor, z. B. BC547 + 1 kΩ)</text>
+    <text x="40" y="566">3-Pin-Buzzer-Modul: VCC→3V3 · GND→GND · I/O (S)→GPIO10</text>
+  </g>
+</svg>
