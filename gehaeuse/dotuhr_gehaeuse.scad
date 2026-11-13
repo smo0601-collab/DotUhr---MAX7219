@@ -59,6 +59,7 @@ touch_x   = 55;           // Position (von vorne gesehen rechts)
 touch_w   = 14.4;         // Platine 14 x 14 mm (+ Spiel); Winkel-Stiftleiste zeigt nach links/innen
 touch_l   = 14.4;
 touch_wall = 2.0;         // Restwand über dem Sensor (Modul schafft ca. 5 mm)
+touch_pcb = 1.6;          // Platinenstärke TTP223 (nachmessen)
 buzzer    = true;         // Halter im Deckel + Schalllöcher
 buz_d     = 12.0;         // Buzzer-Durchmesser (Standard 12 mm)
 buz_z     = 16;           // Höhe über Mitte
@@ -131,11 +132,8 @@ module body() {
     xz(tf - 0.01, stack + 6) rr(pk_w + 4, pk_h + 4, 1);
     xz(tf - 1, stack + 8) square([pk_w, pk_h], center = true);
   }
-  // Halter für TTP223 unter der Mulde (U-Rahmen, links offen für die Anschlüsse)
-  if (touch) translate([touch_x, Db/2, Hi/2]) difference() {
-    translate([-touch_w/2 - 0.01, -touch_l/2 - 1.4, -3]) cube([touch_w + 1.4, touch_l + 2.8, 3.01]);
-    translate([-touch_w/2 - 1, -touch_l/2, -4]) cube([touch_w + 1, touch_l, 5]);
-  }
+  // Halter für TTP223 unter der Mulde (Einschub-Schiene)
+  if (touch) touch_holder();
   // Schraubdome
   for (sx = [-1, 1], sz = [-1, 1])
     translate([sx * bx, tf - 0.01, sz * bz]) difference() {
@@ -175,12 +173,8 @@ module cover() {
         cylinder(d = buz_d + 3.2, h = 7.01);
         translate([0, 0, -1]) cylinder(d = buz_d + 0.4, h = 9);
       }
-      // ESP32-C3 Halter: Auflage + seitliche Führungen
-      esp_bot = esp_pcb_top - esp_pcb_t;
-      translate([-4.5, Db - 16, esp_bot - 5]) cube([9, 16.01, 5]);
-      for (s = [-1, 1])
-        translate([s > 0 ? esp_w/2 + 0.3 : -esp_w/2 - 0.3 - 1.6, Db - 12, esp_bot - 5])
-          cube([1.6, 12.01, 5 + esp_pcb_t + 2]);
+      // ESP32-C3 Halter
+      esp_holder();
     }
     // USB-C Durchbruch + Stecker-Tasche
     translate([0, 0, usb_z]) xz(Db - 1, back_t + 2) rr(usb_hole[0], usb_hole[1], 1.5);
@@ -199,6 +193,58 @@ module cover() {
     translate([0, D + 0.5, usb_z + usb_plug[1]/2 + 4]) rotate([90, 0, 0]) linear_extrude(1)
       mirror([1, 0]) text("USB-C  5V", size = 3.5, font = label_font, halign = "center", valign = "center");
   }
+}
+
+// ---------------------------------------------------------------- ESP32-C3 Halter
+// Platine liegt auf einer Auflage, die USB-Buchse steckt im Deckel-Durchbruch.
+//  - Anschlag am hinteren Platinenende: fängt den Druck beim Kabel-Einstecken ab
+//  - 2 federnde Seitenwangen mit Rastnasen: halten die Platine nach oben fest
+// Einsetzen: Buchse in den Durchbruch, Platine flach nach unten drücken -> klickt ein.
+esp_fin_l = 17;           // Länge der federnden Wangen
+esp_snap  = 0.8;          // Überstand der Rastnasen über die Platinenkante
+module esp_holder() {
+  esp_bot = esp_pcb_top - esp_pcb_t;
+  y_end   = Db - esp_l;                       // hinteres Platinenende
+  // Auflage über die ganze Länge (zwischen den Stiftreihen)
+  translate([-4.5, y_end - 1.8, esp_bot - 5]) cube([9, esp_l + 1.81, 5]);
+  // Anschlag
+  translate([-4.5, y_end - 1.8, esp_bot - 5]) cube([9, 1.6, 5 + esp_pcb_t + 1.5]);
+  // Federnde Wangen mit Rastnase
+  for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0]) {
+    translate([esp_w/2 + 0.25, Db - esp_fin_l, esp_bot - 5])
+      cube([1.6, esp_fin_l + 0.01, 5 + esp_pcb_t + 1.6]);
+    // Rastnase mit Einführschräge (oben)
+    translate([0, Db - esp_fin_l, 0]) rotate([-90, 0, 0]) linear_extrude(3)
+      polygon([[esp_w/2 + 0.26, -(esp_pcb_top + 0.15)],
+               [esp_w/2 + 0.26 - esp_snap, -(esp_pcb_top + 0.15)],
+               [esp_w/2 + 0.26, -(esp_pcb_top + 0.15 + esp_snap + 0.8)]]);
+  }
+}
+
+// ---------------------------------------------------------------- TTP223 Halter
+// Schiene unter der Touch-Mulde: Modul von innen (links) einschieben,
+// glatte Seite nach oben an die Wand, Bauteile + Stiftleiste nach unten.
+module touch_holder() {
+  zt  = Hi/2;                           // Innenseite Deckenwand
+  z1  = zt - touch_pcb - 0.3;           // Unterkante Platine
+  lip = 0.8;                            // Auflage unter der Platinenkante
+  h   = zt - (z1 - 1.2);                // Höhe der Schienen
+  translate([touch_x, Db/2, 0]) {
+    // Schiene hinten (+y)
+    xz_rail(touch_w + 1.2) polygon([[touch_l/2, zt + 0.01], [touch_l/2, z1], [touch_l/2 - lip, z1],
+                                    [touch_l/2, z1 - lip], [touch_l/2, z1 - 1.2],
+                                    [touch_l/2 + 1.4, z1 - 1.2], [touch_l/2 + 1.4, zt + 0.01]]);
+    // Schiene vorne (-y), unten 45° abgeschrägt (druckbar ohne Stütze)
+    xz_rail(touch_w + 1.2) polygon([[-touch_l/2, zt + 0.01], [-touch_l/2, z1], [-touch_l/2 + lip, z1],
+                                    [-touch_l/2 + lip, z1 - 0.6], [-touch_l/2, z1 - 1.2],
+                                    [-touch_l/2 - 1.4, z1 - 1.2], [-touch_l/2 - 1.4 - h, zt + 0.01]]);
+    // Endanschlag rechts
+    translate([touch_w/2, -touch_l/2 - 1.4, z1 - 1.2]) cube([1.2, touch_l + 2.8, h + 0.01]);
+  }
+}
+// 2D-Profil in der YZ-Ebene (Punkte [y, z]), extrudiert entlang X ab -touch_w/2
+module xz_rail(len) {
+  translate([-touch_w/2, 0, 0]) rotate([90, 0, 90]) linear_extrude(len) children();
 }
 
 // ---------------------------------------------------------------- Pixelgitter
@@ -223,7 +269,7 @@ module dummy_display() {
       rotate([-90, 0, 0]) cylinder(d = 3, h = 0.3, $fn = 12);
 }
 module dummy_extra() {
-  if (touch) color("#1565c0") translate([touch_x - touch_w/2, Db/2 - touch_l/2, Hi/2 - 1.6]) cube([touch_w, touch_l, 1.6]);
+  if (touch) color("#1565c0") translate([touch_x - touch_w/2 + 0.2, Db/2 - touch_l/2 + 0.2, Hi/2 - touch_pcb]) cube([touch_w - 0.4, touch_l - 0.4, touch_pcb]);
   if (buzzer) color("#111") translate([0, Db - 9.5, buz_z]) rotate([-90, 0, 0]) cylinder(d = buz_d, h = 9.5);
 }
 module dummy_esp() {
