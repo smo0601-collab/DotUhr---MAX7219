@@ -1,0 +1,41 @@
+# Erstellt ein GitHub-Release mit Firmware (.bin) und Gehäuse (.stl)
+# Start: Actions → "Release erstellen" → "Run workflow"  (oder Tag v* pushen)
+name: Release erstellen
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version / Tag (z. B. v1.3.0)"
+        required: true
+        default: "v1.3.0"
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dateien sammeln
+        run: |
+          mkdir -p out
+          cp firmware/bin/DotUhr_komplett_0x0.bin firmware/bin/DotUhr_update_OTA.bin out/
+          cp gehaeuse/stl/*.stl gehaeuse/dotuhr_gehaeuse.scad out/
+          ls -la out
+
+      - name: Release anlegen oder aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.version || github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --target "$GITHUB_SHA" \
+              --title "DotUhr $TAG" --notes-file .github/release-notes.md
+          fi
