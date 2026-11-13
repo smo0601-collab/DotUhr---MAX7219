@@ -2,7 +2,7 @@
 
 ![DotUhr](bilder/ansicht_vorne.png)
 
-**Firmware-Download:** [`firmware/bin/`](firmware/bin/) · **STL-Dateien:** [`gehaeuse/stl/`](gehaeuse/stl/)
+**Download:** [Releases](../../releases/latest) (Firmware + STL) · Ordner [`firmware/bin/`](firmware/bin/) · [`gehaeuse/stl/`](gehaeuse/stl/)
 
 Uhr · Wecker · Datum · Wetter · Laufschrift · Touch-Taste · Web-Oberfläche · 3D-Druck-Gehäuse (USB-C hinten mittig)
 
