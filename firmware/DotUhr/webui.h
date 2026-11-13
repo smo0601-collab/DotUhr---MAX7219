@@ -199,7 +199,7 @@ async function status(){
    (s.ringing?kv('Wecker','KLINGELT'):s.snoozing?kv('Wecker','Schlummern'):'')+kv('Laufzeit',Math.floor(s.uptime/3600)+' h '+Math.floor(s.uptime%3600/60)+' min')+kv('Firmware','v'+s.version);
  }catch(e){}setTimeout(status,2000)}
 function tab(k){if(!$('t-'+k))k='start';document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.id=='t-'+k));
- document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==k));
+ document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t==k);if(b.dataset.t==k)b.scrollIntoView({inline:'center',block:'nearest'})});
  $('saveBar').style.display=k=='start'?'none':'';history.replaceState(null,'','#'+k)}
 async function syncBrowser(silent){await fetch('/api/time?epoch='+Math.floor(Date.now()/1000));if(!silent)toast('Uhrzeit übernommen');else toast('Uhrzeit automatisch vom Gerät übernommen')}
 async function setManual(){const d=$('setDate').value,t=$('setTime').value;if(!d||!t){toast('Datum und Uhrzeit eingeben');return}
