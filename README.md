@@ -138,16 +138,15 @@ Maße außen: **170 × 62 × 60 mm** (B × H × T). Der USB-C-Anschluss sitzt **
 |---|---|---|
 | `dotuhr_body.stl` | Front nach unten (liegt schon so) | **ohne Stützmaterial**, 3 Wände, 15–20 % Infill |
 | `dotuhr_cover.stl` | Außenseite nach unten | ohne Stützmaterial |
-| `dotuhr_grid.stl` | flach | **Pixelgitter**, schwarz drucken; macht die Punkte rund und scharf |
 | `dotuhr_diffuser.stl` | flach | **Streuscheibe** 0,8 mm (2–4 Lagen), weiß/transparentes PETG oder grau |
 
 Die Gravur „DOT·UHR“ vorne und „USB-C 5V“ hinten wird direkt in den ersten Schichten mitgedruckt. Mit einem Filamentwechsel in Schicht 2–3 bekommst du eine zweifarbige Schrift.
 Statt der gedruckten Streuscheibe kannst du auch **getöntes Acryl (Rauchglas) 132 × 32 mm, 1–2 mm** einsetzen. Das sieht besonders retro aus.
 
-Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun, Gitter in Schwarz und als Streuscheibe rotes Transparent-PETG verwenden.
+Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun und als Streuscheibe rotes Transparent-PETG verwenden.
 
 ### Zusammenbau
-1. Von hinten in die Displaytasche einlegen: Streuscheibe → Pixelgitter → Matrix-Modul (LEDs nach vorne, **Eingang links** von vorne gesehen).
+1. Von hinten in die Displaytasche einlegen: Streuscheibe → Matrix-Modul (LEDs nach vorne, **Eingang links** von vorne gesehen).
 2. **Touch-Sensor:** Von innen seitlich in die Schiene unter der Mulde (oben rechts) schieben, bis er am Anschlag anliegt. Die glatte Seite zeigt nach oben an die Wand, Bauteile und Stiftleiste zeigen nach unten, die Stiftleiste zur Gehäusemitte. Die Schiene hält ihn ohne Kleber.
 3. **Buzzer** in den Ring im Deckel (über der USB-Buchse) einkleben, Öffnung zu den Schalllöchern.
 4. **ESP32-C3:** Die USB-Buchse schräg in den Durchbruch im Deckel stecken. Dann die Platine flach auf die Auflage drücken, bis die beiden federnden Wangen mit ihren Rastnasen über die Platinenkante **einklicken**. Der Anschlag am hinteren Ende fängt den Druck beim Einstecken des Kabels ab. Zum Ausbauen die Wangen leicht auseinanderbiegen.
@@ -155,7 +154,7 @@ Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun, Gitter in Schwarz 
    ![Halter](bilder/halter_esp_touch.png)
    *Links: ESP32-C3-Halter im Deckel (Wangen mit Rastnasen, Anschlag hinten). Rechts: Touch-Schiene von unten.*
 5. Die Kabel anschließen. Sind an das ESP-Board Stiftleisten gelötet, sollten sie **nach unten** zeigen. Noch flacher wird es, wenn du die Kabel direkt anlötest.
-6. Den Deckel aufsetzen. Die 4 Stützen halten das Modul in der Tasche (4 mm Luft; bei Bedarf Moosgummi unterlegen).
+6. Den Deckel aufsetzen. Die 2 Stützen halten das Modul in der Tasche (4 mm Luft; bei Bedarf Moosgummi unterlegen).
    Mit **4 × M3 × 8–10 Senkkopf**-Schrauben (selbstschneidend in 2,6 mm) festschrauben.
 
 ### Anpassen (OpenSCAD)
@@ -163,15 +162,16 @@ Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun, Gitter in Schwarz 
 * `mod_pcb_back`: **bitte nachmessen!** Gemeint ist der Abstand von der Vorderseite der Matrix bis zur Rückseite der Platine (Standard 10 mm). Davon hängt die Länge der Andruck-Stützen ab. Sitzt das Modul locker, den Wert etwas kleiner machen oder ein Stück Moosgummi dazwischenlegen.
 * `esp_pcb_t`: Platinenstärke des Super Mini (je nach Charge 1,0–1,6 mm). Davon hängt die Höhe der Rastnasen ab.
 * `esp_snap`: Überstand der Rastnasen (Standard 0,8 mm). Kleiner machen, wenn sie an Lötstellen stoßen.
-* `use_grid`, `dif_t`: ohne Gitter bzw. ohne Streuscheibe
+* `dif_t`: Stärke der Streuscheibe (0 = ohne)
 * `cable_slot`: Kabelschlitz (Standard 20 mm) links und rechts mittig in der Displaytasche, bis zur Frontwand – Platz für die Dupont-Stecker an Ein- und Ausgang des Moduls
 * `post_short`: Die Andruck-Stützen im Deckel sind um diesen Wert gekürzt (Standard 4 mm)
+* `post_from_right`: Position der 2 Stützen, gemessen vom rechten Platinenrand (von vorne gesehen), Standard 35 und 100 mm
 * `label`: eigener Schriftzug vorne
 * `touch`, `touch_x`, `touch_w`, `touch_l`, `touch_wall`: Touch-Mulde (Standard: 14 × 14 mm wie das TTP223-Punkt-Modul); `touch_pcb` = Platinenstärke für den Schienenschlitz
 * `buzzer`, `buz_d`: Buzzer-Halter (Standard 12 mm)
 * `screw_core = 4.0`: für Gewindeeinsätze M3 statt selbstschneidender Schrauben
 
-Export: `openscad -D 'part="body"' -o body.stl dotuhr_gehaeuse.scad` (Teile: `body`, `cover`, `grid`, `diffuser`, `print_all`)
+Export: `openscad -D 'part="body"' -o body.stl dotuhr_gehaeuse.scad` (Teile: `body`, `cover`, `diffuser`, `print_all`)
 
 ---
 

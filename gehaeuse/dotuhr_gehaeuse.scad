@@ -3,18 +3,19 @@
 //  Stromanschluss (USB-C des ESP32) hinten mittig.
 //
 //  Koordinaten:  X = Breite,  Y = Tiefe (Front bei y=0),  Z = Höhe (Mitte = 0)
-//  Teile:  "body" (Gehäuse), "cover" (Rückdeckel), "grid" (Pixelgitter, optional),
+//  Teile:  "body" (Gehäuse), "cover" (Rückdeckel),
 //          "diffuser" (Streuscheibe, optional), "assembly" (Gesamtansicht)
 //  Export: openscad -D 'part="body"' -o body.stl dotuhr_gehaeuse.scad
 // ============================================================================
 
-part = "assembly";        // [assembly, body, cover, grid, diffuser, print_all]
+part = "assembly";        // [assembly, body, cover, diffuser, print_all]
 
 /* [Display-Modul] */
 mod_w        = 132.0;     // Platinenlänge (Datenblatt: 13,2 cm)
 mod_h        = 32.0;      // Platinenhöhe
 mod_pcb_back = 10.0;      // Vorderseite Matrix -> Rückseite Platine (bitte nachmessen!)
 post_short   = 4.0;       // Andruck-Stützen im Deckel um diesen Wert kürzer (Luft zum Modul)
+post_from_right = [35, 100]; // Stützen: Abstand vom rechten Platinenrand (von vorne gesehen), mittig in der Höhe
 cable_slot   = 20;        // Kabelschlitz links/rechts in der Displaytasche (Höhe, mittig)
 mod_cols     = 32;        // Pixel horizontal (4 Module à 8)
 pitch        = 4.0;       // LED-Raster (32 mm / 8)
@@ -35,9 +36,6 @@ win_w     = 128.0;
 win_h     = 31.5;
 win_r     = 1.5;
 win_ch    = 1.5;          // 45°-Fase am Fenster
-use_grid  = true;         // Pixelgitter eingeplant
-grid_t    = 2.0;
-grid_hole = 3.3;
 dif_t     = 0.8;          // Streuscheibe (0 = ohne)
 deco_ring = true;         // umlaufende Zierrille um das Fenster
 label     = "DOT·UHR";    // Gravur unter dem Fenster ("" = keine)
@@ -77,8 +75,8 @@ $fn = 48;
 // ---------------------------------------------------------------- abgeleitet
 Wi  = W - 2*t;  Hi = H - 2*t;  Ri = max(R - t, 1);
 Db  = D - back_t;                         // Tiefe Gehäuse ohne Deckel
-pk_w = mod_w + tol;  pk_h = mod_h + tol;  // Tasche für Modul / Gitter / Streuscheibe
-stack = dif_t + (use_grid ? grid_t : 0);
+pk_w = mod_w + tol;  pk_h = mod_h + tol;  // Tasche für Modul / Streuscheibe
+stack = dif_t;
 mod_front_y = tf + stack;
 mod_back_y  = mod_front_y + mod_pcb_back; // hier drücken die Stützen des Deckels
 bx = Wi/2 - boss_d/2;  bz = Hi/2 - boss_d/2;
@@ -86,6 +84,7 @@ usb_shell_h = 3.26;
 esp_pcb_top = usb_z - usb_shell_h/2;
 
 // ---------------------------------------------------------------- Helfer
+function post_x() = [for (d = post_from_right) mod_w/2 - d];
 module rr(w, h, r) { offset(r) square([w - 2*r, h - 2*r], center = true); }
 // 2D-Profil in der XZ-Ebene, extrudiert von y0 über len in +Y
 module xz(y0, len) { translate([0, y0, 0]) rotate([-90, 0, 0]) linear_extrude(len) mirror([0, 1]) children(); }
@@ -129,7 +128,7 @@ module body() {
     for (sx = [-1, 1], sz = [-1, 1])
       translate([sx * bx, Db - 14, sz * bz]) rotate([-90, 0, 0]) cylinder(d = screw_core, h = 15);
   }
-  // Tasche für Streuscheibe / Gitter / Modul
+  // Tasche für Streuscheibe / Modul
   difference() {
     xz(tf - 0.01, stack + 6) rr(pk_w + 4, pk_h + 4, 1);
     xz(tf - 1, stack + 8) square([pk_w, pk_h], center = true);
@@ -166,9 +165,9 @@ module cover() {
         translate([-62, Db - 3, s > 0 ? Hi/2 - g - lip : -Hi/2 + g]) cube([124, 3.01, lip]);
         translate([s > 0 ? Wi/2 - g - lip : -Wi/2 + g, Db - 3, -16]) cube([lip, 3.01, 32]);
       }
-      // Andruck-Stützen für das Display-Modul (an den Platinenecken)
-      for (sx = [-1, 1], sz = [-1, 1])
-        translate([sx * (mod_w/2 - 6), mod_back_y + post_short, sz * (mod_h/2 - 4)])
+      // Andruck-Stützen für das Display-Modul (2 Stück, mittig in der Höhe)
+      for (px = post_x())
+        translate([px, mod_back_y + post_short, 0])
           rotate([-90, 0, 0]) difference() {
             cylinder(d = 7, h = Db - mod_back_y - post_short + 0.01);
             translate([0, 0, -0.01]) cylinder(d = 3.5, h = Db);   // leicht federnd
@@ -192,8 +191,10 @@ module cover() {
     // Schalllöcher für den Buzzer
     if (buzzer) for (p = [[0, 0], [3, 0], [-3, 0], [0, 3], [0, -3]])
       translate([p[0], 0, buz_z + p[1]]) xz(Db - 1, back_t + 2) circle(d = 1.8, $fn = 16);
-    // Lüftungsschlitze
-    for (s = [-1, 1], x = [22 : 5 : 52]) translate([s * x, 0, 0]) xz(Db - 1, back_t + 2) rr(2, 20, 0.9);
+    // Lüftungsschlitze (ausgespart, wo die Stützen sitzen)
+    for (s = [-1, 1], x = [22 : 5 : 52])
+      if (min([for (px = post_x()) abs(s * x - px)]) > 5)
+        translate([s * x, 0, 0]) xz(Db - 1, back_t + 2) rr(2, 20, 0.9);
     // Beschriftung hinten
     translate([0, D + 0.5, usb_z + usb_plug[1]/2 + 4]) rotate([90, 0, 0]) linear_extrude(1)
       mirror([1, 0]) text("USB-C  5V", size = 3.5, font = label_font, halign = "center", valign = "center");
@@ -252,15 +253,7 @@ module xz_rail(len) {
   translate([-touch_w/2, 0, 0]) rotate([90, 0, 90]) linear_extrude(len) children();
 }
 
-// ---------------------------------------------------------------- Pixelgitter
-module grid() {
-  difference() {
-    translate([-(pk_w - tol)/2, 0, -(pk_h - tol)/2]) cube([pk_w - tol, grid_t, pk_h - tol]);
-    for (i = [0 : mod_cols - 1], j = [0 : 7])
-      translate([(i - (mod_cols - 1)/2) * pitch, -1, (j - 3.5) * pitch])
-        rotate([-90, 0, 0]) cylinder(d = grid_hole, h = grid_t + 2, $fn = 16);
-  }
-}
+// ---------------------------------------------------------------- Streuscheibe
 module diffuser() {
   translate([-(pk_w - tol)/2, 0, -(pk_h - tol)/2]) cube([pk_w - tol, dif_t, pk_h - tol]);
 }
@@ -286,23 +279,19 @@ module dummy_esp() {
 // Druckausrichtung: Gehäuse mit der Front nach unten, Deckel mit der Außenseite nach unten
 module body_print()  { rotate([90, 0, 0]) body(); }
 module cover_print() { translate([0, 0, D]) rotate([-90, 0, 0]) cover(); }
-module grid_print()  { rotate([90, 0, 0]) grid(); }
 module dif_print()   { rotate([90, 0, 0]) diffuser(); }
 
 if (part == "body")          body_print();
 else if (part == "cover")    cover_print();
-else if (part == "grid")     grid_print();
 else if (part == "diffuser") dif_print();
 else if (part == "print_all") {
   body_print();
   translate([0, H + 15, 0]) cover_print();
-  translate([0, -H/2 - 30, 0]) grid_print();
-  translate([0, -H/2 - 70, 0]) dif_print();
+  translate([0, -H/2 - 30, 0]) dif_print();
 }
 else {   // assembly
   color("#c8b38a") body();
   color("#8a6a45") cover();
-  if (use_grid) color("#333") translate([0, tf + dif_t, 0]) grid();
   dummy_display();
   dummy_esp();
   dummy_extra();

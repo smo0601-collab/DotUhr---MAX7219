@@ -7,7 +7,7 @@
 | `DotUhr_update_OTA.bin` | **Update** über die Web-Oberfläche: *System → Firmware-Update* (Einstellungen bleiben erhalten) |
 
 ### Gehäuse
-`dotuhr_body.stl`, `dotuhr_cover.stl`, `dotuhr_grid.stl` (Pixelgitter), `dotuhr_diffuser.stl` (Streuscheibe) und die parametrische Quelle `dotuhr_gehaeuse.scad`.
+`dotuhr_body.stl`, `dotuhr_cover.stl`, `dotuhr_diffuser.stl` (Streuscheibe) und die parametrische Quelle `dotuhr_gehaeuse.scad`.
 
 ### Funktionen
 - Uhr (Klassik / Rund), Sekundenbalken, 12/24 h, Datum, Wetter (Open-Meteo), Laufschrift, Sofort-Nachrichten
