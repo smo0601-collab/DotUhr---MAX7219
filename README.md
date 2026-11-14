@@ -155,7 +155,7 @@ Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun, Gitter in Schwarz 
    ![Halter](bilder/halter_esp_touch.png)
    *Links: ESP32-C3-Halter im Deckel (Wangen mit Rastnasen, Anschlag hinten). Rechts: Touch-Schiene von unten.*
 5. Die Kabel anschließen. Sind an das ESP-Board Stiftleisten gelötet, sollten sie **nach unten** zeigen. Noch flacher wird es, wenn du die Kabel direkt anlötest.
-6. Den Deckel aufsetzen. Die 4 Stützen drücken das Modul nach vorne.
+6. Den Deckel aufsetzen. Die 4 Stützen halten das Modul in der Tasche (4 mm Luft; bei Bedarf Moosgummi unterlegen).
    Mit **4 × M3 × 8–10 Senkkopf**-Schrauben (selbstschneidend in 2,6 mm) festschrauben.
 
 ### Anpassen (OpenSCAD)
@@ -164,6 +164,8 @@ Retro-Tipp: Gehäuse in Creme/Beige drucken, Deckel in Braun, Gitter in Schwarz 
 * `esp_pcb_t`: Platinenstärke des Super Mini (je nach Charge 1,0–1,6 mm). Davon hängt die Höhe der Rastnasen ab.
 * `esp_snap`: Überstand der Rastnasen (Standard 0,8 mm). Kleiner machen, wenn sie an Lötstellen stoßen.
 * `use_grid`, `dif_t`: ohne Gitter bzw. ohne Streuscheibe
+* `cable_slot`: Kabelschlitz (Standard 20 mm) links und rechts mittig in der Displaytasche, bis zur Frontwand – Platz für die Dupont-Stecker an Ein- und Ausgang des Moduls
+* `post_short`: Die Andruck-Stützen im Deckel sind um diesen Wert gekürzt (Standard 4 mm)
 * `label`: eigener Schriftzug vorne
 * `touch`, `touch_x`, `touch_w`, `touch_l`, `touch_wall`: Touch-Mulde (Standard: 14 × 14 mm wie das TTP223-Punkt-Modul); `touch_pcb` = Platinenstärke für den Schienenschlitz
 * `buzzer`, `buz_d`: Buzzer-Halter (Standard 12 mm)

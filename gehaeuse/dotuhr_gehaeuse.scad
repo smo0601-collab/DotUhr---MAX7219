@@ -14,6 +14,8 @@ part = "assembly";        // [assembly, body, cover, grid, diffuser, print_all]
 mod_w        = 132.0;     // Platinenlänge (Datenblatt: 13,2 cm)
 mod_h        = 32.0;      // Platinenhöhe
 mod_pcb_back = 10.0;      // Vorderseite Matrix -> Rückseite Platine (bitte nachmessen!)
+post_short   = 4.0;       // Andruck-Stützen im Deckel um diesen Wert kürzer (Luft zum Modul)
+cable_slot   = 20;        // Kabelschlitz links/rechts in der Displaytasche (Höhe, mittig)
 mod_cols     = 32;        // Pixel horizontal (4 Module à 8)
 pitch        = 4.0;       // LED-Raster (32 mm / 8)
 tol          = 0.4;       // Spiel für Taschen
@@ -131,6 +133,9 @@ module body() {
   difference() {
     xz(tf - 0.01, stack + 6) rr(pk_w + 4, pk_h + 4, 1);
     xz(tf - 1, stack + 8) square([pk_w, pk_h], center = true);
+    // Kabelschlitze links und rechts, mittig, bis zur Frontwand (für Dupont-Stecker)
+    if (cable_slot > 0) for (s = [-1, 1])
+      translate([s * (pk_w/2 + 1) - 2.5, tf, -cable_slot/2]) cube([5, stack + 7, cable_slot]);
   }
   // Halter für TTP223 unter der Mulde (Einschub-Schiene)
   if (touch) touch_holder();
@@ -163,9 +168,9 @@ module cover() {
       }
       // Andruck-Stützen für das Display-Modul (an den Platinenecken)
       for (sx = [-1, 1], sz = [-1, 1])
-        translate([sx * (mod_w/2 - 6), mod_back_y, sz * (mod_h/2 - 4)])
+        translate([sx * (mod_w/2 - 6), mod_back_y + post_short, sz * (mod_h/2 - 4)])
           rotate([-90, 0, 0]) difference() {
-            cylinder(d = 7, h = Db - mod_back_y + 0.01);
+            cylinder(d = 7, h = Db - mod_back_y - post_short + 0.01);
             translate([0, 0, -0.01]) cylinder(d = 3.5, h = Db);   // leicht federnd
           }
       // Buzzer-Halter (Ring, Buzzer einkleben)
