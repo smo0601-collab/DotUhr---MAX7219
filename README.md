@@ -112,12 +112,14 @@ Die Oberfläche ist in Reiter aufgeteilt: **Start** (Status, Sofort-Nachricht) �
 * **Datum:** `12.11.`, `Do 12.11.` oder `Donnerstag, 12. November 2026`
 * **Helligkeit + Nachtmodus:** Die Regler wirken sofort und werden automatisch gespeichert. Nachts kann die Uhr dimmen oder ganz ausgehen.
 * **Uhrzeit & Datum ohne Internet:** Unter *System* kannst du die Zeit mit einem Knopf vom Handy/PC übernehmen oder Datum und Uhrzeit von Hand eintragen. Ist die Uhr noch nicht gestellt, übernimmt sie die Zeit automatisch, sobald du die Seite öffnest (praktisch im Einrichtungs-WLAN ohne Internet). Ist Internet da, stellt sie sich selbst über NTP. Ohne Uhrenbaustein (RTC) geht die Zeit bei Stromausfall verloren.
+* **Zugang (Login):** Die Web-Oberfläche und alle API-Adressen sind geschützt. Standard ist Benutzer **admin** mit **leerem Passwort**. Unter *System → Zugang* änderst du Benutzer und Passwort oder schaltest die Anmeldung ab. Im Einrichtungs-WLAN beim ersten Start ist keine Anmeldung nötig. **Passwort vergessen:** die Touch-Taste **10 Sekunden** halten, dann gilt wieder admin ohne Passwort.
 * **System:** Zeitzone, Matrix-Typ, Anzahl der Module, Gerätename, OTA-Update, Neustart, Werkseinstellungen
 
 Umlaute, ß und ° werden korrekt dargestellt.
 
 **HTTP-API** (z. B. für Home Assistant oder Node-RED):
 ```
+# mit Passwort: http://admin:PASSWORT@dotuhr.local/api/message?text=…
 GET  /api/message?text=Waschmaschine%20fertig&repeat=3
 GET  /api/brightness?v=0..15&save=1
 GET  /api/alarm?action=test|snooze|stop

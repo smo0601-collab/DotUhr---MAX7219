@@ -8,7 +8,7 @@ on:
       version:
         description: "Version / Tag (z. B. v1.3.0)"
         required: true
-        default: "v1.3.0"
+        default: "v1.4.0"
   push:
     tags: ["v*"]
 

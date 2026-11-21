@@ -14,6 +14,7 @@
 - Wecker: 3 Weckzeiten mit Wochentagen, 3 Töne, Schlummern, passiver/aktiver Buzzer
 - TTP223 Touch-Taste (Punkt- und Selbsthalte-Modus)
 - Uhrzeit & Datum auch ohne Internet stellbar (automatisch vom Browser oder von Hand)
+- Login für die Web-Oberfläche (Standard: admin, Passwort leer; Reset: Touch 10 s halten)
 - Web-Oberfläche mit Reitern und Live-Vorschau, Helligkeit live, Nachtmodus, OTA-Update
 - Offenes Einrichtungs-WLAN **DotUhr-Setup** → http://192.168.4.1
 

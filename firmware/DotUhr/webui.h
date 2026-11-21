@@ -115,6 +115,14 @@ nav.tabs button.on{background:linear-gradient(var(--amber),var(--amber2));color:
 <div class="row"><input type="checkbox" id="touchInv"><label>Signal invertieren</label><small>nur nötig, wenn der Sensor ohne Berührung „gedrückt“ meldet</small></div>
 <small><b>Tippen</b>: nächste Anzeige (nachts: Anzeige 15 s an) · <b>1,5 s halten</b>: Anzeige an/aus</small></div>
 
+<div class="card"><h2>Zugang (Login)</h2>
+<div class="row"><input type="checkbox" id="authEn"><label>Anmeldung erforderlich</label></div>
+<div class="row"><label>Benutzername</label><input type="text" id="webUser" maxlength="32" autocomplete="username"></div>
+<div class="row"><label>Neues Passwort</label><input type="password" id="webPass1" maxlength="32" autocomplete="new-password" placeholder="leer = kein Passwort"></div>
+<div class="row"><label>Wiederholen</label><input type="password" id="webPass2" maxlength="32" autocomplete="new-password"></div>
+<div class="row"><button onclick="saveAuth()">Zugang speichern</button><small id="authInfo"></small></div>
+<small>Standard: Benutzer <b>admin</b>, Passwort <b>leer</b>. Passwort vergessen? Touch-Taste <b>10 Sekunden</b> halten → zurück auf admin ohne Passwort. Im Einrichtungs-WLAN ist keine Anmeldung nötig.</small></div>
+
 <div class="card"><h2>WLAN</h2>
 <div class="row"><label>Netzwerk (SSID)</label><input type="text" id="ssid"><button class="sec" onclick="scan()">Suchen</button></div>
 <div class="list" id="scanList"></div>
@@ -144,12 +152,19 @@ function alarmsGet(){return [0,1,2].map(i=>{const t=($('a'+i+'t').value||'07:00'
 let W=32;
 let briT=0;function bri(v,n,save){clearTimeout(briT);const u='/api/brightness?v='+v+'&night='+n+(save?'&save=1':'');
  if(save)fetch(u).then(()=>toast('Helligkeit gespeichert'));else briT=setTimeout(()=>fetch(u),60)}
+async function saveAuth(){const p1=$('webPass1').value,p2=$('webPass2').value;
+ if(p1!==p2){toast('Passwörter stimmen nicht überein');return}
+ if(!p1&&!confirm('Kein Passwort setzen? Dann kann jeder im WLAN die Uhr bedienen.'))return;
+ const r=await post('/api/auth',{en:$('authEn').checked,user:$('webUser').value.trim()||'admin',pass:p1});
+ $('webPass1').value=$('webPass2').value='';toast(r.ok?'Zugang gespeichert – ggf. neu anmelden':'Fehler');
+ if(r.ok)setTimeout(()=>location.reload(),1500)}
 function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2500)}
 const post=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):''});
 async function load(){
  const c=await (await fetch('/api/config')).json();
  KEYS.forEach(k=>{const e=$(k);if(!e||c[k]===undefined)return;if(e.type=='checkbox')e.checked=c[k];else e.value=c[k]});
- $('pass').value='';W=c.modules*8;alarmsUI(c.alarms||[]);
+ $('pass').value='';W=c.modules*8;$('authEn').checked=c.authEn;$('webUser').value=c.webUser||'admin';
+ $('authInfo').textContent=c.hasWebPass?'Passwort ist gesetzt':'aktuell ohne Passwort';alarmsUI(c.alarms||[]);
  $('sv').textContent=c.speed+' ms';$('bv').textContent=c.bright;$('nv').textContent=c.nightBright;
  const o=[...$('tzSel').options].find(o=>o.value==c.tz);$('tzSel').value=o?c.tz:'';
 }

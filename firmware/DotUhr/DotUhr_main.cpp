@@ -29,7 +29,7 @@
 #define PIN_TOUCH   3   // TTP223 Touch-Sensor:  I/O -> GPIO3,  VCC -> 3V3,  GND -> GND
 #define PIN_BUZZER 10   // Buzzer:  + (bzw. I/O) -> GPIO10,  - -> GND
 
-#define FW_VERSION   "1.3.0"
+#define FW_VERSION   "1.4.0"
 #define AP_NAME      "DotUhr-Setup"    // Einrichtungs-WLAN (offen, ohne Passwort)
 
 // ---------------------------------------------------------------------------
@@ -63,6 +63,10 @@ struct Config {
   // Touch
   bool touchEn = true, touchInv = false, touchBeep = true;
   bool touchToggle = false; // TTP223 im Selbsthalte-Modus (jede Berührung wechselt den Ausgang)
+  // Zugang zur Web-Oberfläche (HTTP Basic Auth)
+  bool authEn = true;
+  String webUser = "admin";
+  String webPass = "";      // Standard: leer
 
   bool showDate   = true;  uint16_t dateSec = 4;
   uint8_t dateStyle = 1;    // 0="12.11." 1="Do 12.11." 2=lang (Laufschrift)
@@ -256,6 +260,8 @@ void cfgToJson(JsonDocument& d, bool withSecrets) {
   for (auto& a : cfg.alarms) { JsonObject o = al.add<JsonObject>(); o["en"] = a.en; o["h"] = a.h; o["m"] = a.m; o["days"] = a.days; }
   d["sound"] = cfg.sound; d["buzType"] = cfg.buzType; d["snooze"] = cfg.snooze; d["ringMax"] = cfg.ringMax;
   d["touchEn"] = cfg.touchEn; d["touchInv"] = cfg.touchInv; d["touchBeep"] = cfg.touchBeep; d["touchToggle"] = cfg.touchToggle;
+  d["authEn"] = cfg.authEn; d["webUser"] = cfg.webUser;
+  if (withSecrets) d["webPass"] = cfg.webPass; else d["hasWebPass"] = cfg.webPass.length() > 0;
   d["showDate"] = cfg.showDate; d["dateSec"] = cfg.dateSec; d["dateStyle"] = cfg.dateStyle;
   d["showWeather"] = cfg.showWeather; d["weatherSec"] = cfg.weatherSec; d["weatherScroll"] = cfg.weatherScroll;
   d["lat"] = cfg.lat; d["lon"] = cfg.lon; d["city"] = cfg.city;
@@ -285,6 +291,8 @@ void cfgFromJson(JsonVariantConst d) {
   getIf(d["sound"], cfg.sound); getIf(d["buzType"], cfg.buzType); getIf(d["snooze"], cfg.snooze);
   getIf(d["ringMax"], cfg.ringMax);
   getIf(d["touchEn"], cfg.touchEn); getIf(d["touchInv"], cfg.touchInv); getIf(d["touchBeep"], cfg.touchBeep); getIf(d["touchToggle"], cfg.touchToggle);
+  getIf(d["authEn"], cfg.authEn); getIf(d["webUser"], cfg.webUser); getIf(d["webPass"], cfg.webPass);
+  if (cfg.webUser.isEmpty()) cfg.webUser = "admin";
   cfg.sound = min<uint8_t>(cfg.sound, 2); cfg.buzType = min<uint8_t>(cfg.buzType, 1);
   cfg.snooze = constrain(cfg.snooze, 1, 60); cfg.ringMax = constrain(cfg.ringMax, 1, 60);
   getIf(d["showDate"], cfg.showDate); getIf(d["dateSec"], cfg.dateSec); getIf(d["dateStyle"], cfg.dateStyle);
@@ -690,6 +698,17 @@ void handleTouch() {
     else if (!longDone && now - pressStart < 1000) onTap();
   }
   if (state && !longDone && now - pressStart >= 1500) { longDone = true; onLongPress(); }
+  // 10 s halten: Web-Passwort zurücksetzen (Benutzer admin, Passwort leer)
+  static bool resetDone = false;
+  if (!state) resetDone = false;
+  if (state && !resetDone && now - pressStart >= 10000) {
+    resetDone = true;
+    cfg.webUser = "admin"; cfg.webPass = ""; saveConfig();
+    manualOff = false; wakeUntil = 0; applyBrightness(true);
+    click(); delay(80); click(); delay(80); click();
+    showMessage("Zugang zurückgesetzt: admin / ohne Passwort", 2);
+    Serial.println("[Zugang] Passwort per Touch zurückgesetzt");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -896,26 +915,64 @@ void apiScan() {
   sendJson(d);
 }
 
+// ---------------------------------------------------------------------------
+//  Zugangsschutz
+// ---------------------------------------------------------------------------
+// Im reinen Einrichtungs-WLAN (noch keine Verbindung zum Heimnetz) ist kein Login nötig.
+bool authRequired() { return cfg.authEn && !(apActive && WiFi.status() != WL_CONNECTED); }
+bool authOk() { return !authRequired() || server.authenticate(cfg.webUser.c_str(), cfg.webPass.c_str()); }
+bool checkAuth() {
+  if (authOk()) return true;
+  server.requestAuthentication(BASIC_AUTH, "DotUhr", "Anmeldung erforderlich");
+  return false;
+}
+bool uploadAuthed = false;
+void onAuth(const char* uri, HTTPMethod m, WebServer::THandlerFunction h) {
+  server.on(uri, m, [h]() { if (checkAuth()) h(); });
+}
+void onAuth(const char* uri, HTTPMethod m, WebServer::THandlerFunction h, WebServer::THandlerFunction up) {
+  server.on(uri, m, [h]() { if (checkAuth()) h(); },
+            [up]() {
+              if (server.upload().status == UPLOAD_FILE_START) uploadAuthed = authOk();
+              if (uploadAuthed) up();
+            });
+}
+
+// Zugang ändern: POST /api/auth  {"en":true,"user":"admin","pass":"geheim"}
+void apiAuth() {
+  JsonDocument d;
+  if (deserializeJson(d, server.arg("plain"))) { server.send(400, "text/plain", "JSON-Fehler"); return; }
+  if (!d["en"].isNull()) cfg.authEn = d["en"].as<bool>();
+  if (!d["user"].isNull()) { cfg.webUser = d["user"].as<String>(); cfg.webUser.trim(); }
+  if (cfg.webUser.isEmpty()) cfg.webUser = "admin";
+  if (!d["pass"].isNull()) cfg.webPass = d["pass"].as<String>();
+  if (cfg.webUser.length() > 32) cfg.webUser = cfg.webUser.substring(0, 32);
+  if (cfg.webPass.length() > 32) cfg.webPass = cfg.webPass.substring(0, 32);
+  saveConfig();
+  server.send(200, "application/json", "{\"ok\":true}");
+}
+
 void setupWeb() {
-  server.on("/", HTTP_GET, []() { server.send_P(200, "text/html", INDEX_HTML); });
-  server.on("/api/status", HTTP_GET, apiStatus);
-  server.on("/api/frame", HTTP_GET, apiFrame);
-  server.on("/api/config", HTTP_GET, apiGetConfig);
-  server.on("/api/config", HTTP_POST, apiSetConfig);
-  server.on("/api/message", HTTP_ANY, apiMessage);
-  server.on("/api/brightness", HTTP_ANY, apiBrightness);
-  server.on("/api/alarm", HTTP_ANY, apiAlarm);
-  server.on("/api/time", HTTP_ANY, apiTime);
-  server.on("/api/scan", HTTP_GET, apiScan);
-  server.on("/api/weather/refresh", HTTP_POST, []() { weatherRequested = true; server.send(200, "application/json", "{\"ok\":true}"); });
-  server.on("/api/restart", HTTP_POST, []() {
+  onAuth("/", HTTP_GET, []() { server.send_P(200, "text/html", INDEX_HTML); });
+  onAuth("/api/status", HTTP_GET, apiStatus);
+  onAuth("/api/frame", HTTP_GET, apiFrame);
+  onAuth("/api/config", HTTP_GET, apiGetConfig);
+  onAuth("/api/config", HTTP_POST, apiSetConfig);
+  onAuth("/api/message", HTTP_ANY, apiMessage);
+  onAuth("/api/brightness", HTTP_ANY, apiBrightness);
+  onAuth("/api/alarm", HTTP_ANY, apiAlarm);
+  onAuth("/api/time", HTTP_ANY, apiTime);
+  onAuth("/api/scan", HTTP_GET, apiScan);
+  onAuth("/api/auth", HTTP_POST, apiAuth);
+  onAuth("/api/weather/refresh", HTTP_POST, []() { weatherRequested = true; server.send(200, "application/json", "{\"ok\":true}"); });
+  onAuth("/api/restart", HTTP_POST, []() {
     server.send(200, "application/json", "{\"ok\":true}"); restartPending = true; restartAt = millis() + 800; });
-  server.on("/api/reset", HTTP_POST, []() {
+  onAuth("/api/reset", HTTP_POST, []() {
     prefs.begin("dotuhr", false); prefs.clear(); prefs.end();
     server.send(200, "application/json", "{\"ok\":true}"); restartPending = true; restartAt = millis() + 800; });
 
   // Firmware-Update (.bin aus "Sketch > Kompilierte Binärdatei exportieren")
-  server.on("/update", HTTP_POST,
+  onAuth("/update", HTTP_POST,
     []() {
       bool ok = !Update.hasError();
       server.sendHeader("Connection", "close");
